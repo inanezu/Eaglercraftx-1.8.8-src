@@ -14,27 +14,32 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
           
-      - name: Run Build
+      - name: Run Build (Gold Version)
         shell: bash
-        # ここで「Java 8の場所」と「Javaのバージョン」を強制的に固定するよ
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_8_X64 }}
         run: |
-          # 1. gradlew を探す
+          # 1. gradlew を探して移動
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
           cd "$(dirname "$GRADLEW_PATH")"
           
-          # 2. Javaのパスにある「空白」を消すための魔法の処理
-          # Windowsの短いパス形式 (PROGRA~1等) を使って、空白問題を物理的に消去する
-          export JAVA_HOME=$(cygpath -ms "$JAVA_HOME")
-          echo "Using Java at: $JAVA_HOME"
+          # 2. 空白問題を解決した短いパスを取得
+          SHORT_JAVA_HOME=$(cygpath -ms "$JAVA_HOME")
+          echo "Using Java at: $SHORT_JAVA_HOME"
           
-          # 3. 実行権限を付けて、Javaの場所を直接指定して起動！
+          # 3. 実行権限を付与
           chmod +x gradlew
-          ./gradlew build --no-daemon -Dorg.gradle.java.home="$JAVA_HOME"
           
-      - name: Search and Upload
-        if: always() # 失敗しても、どこまで出来たか確認するために実行するよ
+          # 4. 【最強の命令】
+          # -D で Java の場所を指定し、
+          # -P で「Java 8を使うよ」という値を直接流し込む！
+          ./gradlew build --no-daemon \
+            -Dorg.gradle.java.home="$SHORT_JAVA_HOME" \
+            -Ptarget.java.8=true \
+            -Porg.gradle.java.installations.auto-detect=false
+          
+      - name: Upload Result
+        if: always() # 成功しても失敗しても、何が出来たか見せてね！
         uses: actions/upload-artifact@v4
         with:
           name: eaglercraft-build
@@ -44,3 +49,4 @@ jobs:
             **/assets/
             **/lang/
             **/build/distributions/
+            **/stable-download/
