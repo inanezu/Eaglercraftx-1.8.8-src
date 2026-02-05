@@ -8,16 +8,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Set up JDK 17
+      - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '8' # ここを17から8に変えたよ！
           distribution: 'temurin'
           
       - name: Run Build Directly
         shell: cmd
         run: |
-          :: gradlew.bat がある場所を探して、そこからビルドを実行するよ
           for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
               cd /d "%%~dpi"
               call gradlew.bat build --no-daemon
