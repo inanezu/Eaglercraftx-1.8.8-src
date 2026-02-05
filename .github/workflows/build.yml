@@ -15,26 +15,26 @@ jobs:
           distribution: 'temurin'
           
       - name: Run Build
-        # Windows上だけど、より安定した 'bash' を使って実行するよ！
         shell: bash
+        # ここで「Java 8の場所」と「Javaのバージョン」を強制的に固定するよ
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_8_X64 }}
         run: |
-          # 1. gradlew がある場所を自動で見つけるよ
+          # 1. gradlew を探す
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "Error: gradlew file not found!"
-            exit 1
-          fi
-          
-          # 2. そのフォルダに移動するよ
           cd "$(dirname "$GRADLEW_PATH")"
-          echo "Current directory: $(pwd)"
           
-          # 3. 実行権限を与えて、ビルド開始！
+          # 2. Javaのパスにある「空白」を消すための魔法の処理
+          # Windowsの短いパス形式 (PROGRA~1等) を使って、空白問題を物理的に消去する
+          export JAVA_HOME=$(cygpath -ms "$JAVA_HOME")
+          echo "Using Java at: $JAVA_HOME"
+          
+          # 3. 実行権限を付けて、Javaの場所を直接指定して起動！
           chmod +x gradlew
-          ./gradlew build --no-daemon
+          ./gradlew build --no-daemon -Dorg.gradle.java.home="$JAVA_HOME"
           
       - name: Search and Upload
+        if: always() # 失敗しても、どこまで出来たか確認するために実行するよ
         uses: actions/upload-artifact@v4
         with:
           name: eaglercraft-build
