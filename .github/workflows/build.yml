@@ -15,26 +15,32 @@ jobs:
           distribution: 'temurin'
           
       - name: Run Build
-        shell: cmd
+        # Windows上だけど、より安定した 'bash' を使って実行するよ！
+        shell: bash
         run: |
-          :: gradlew.bat を探して実行するよ
-          for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
-              cd /d "%%~dpi"
-              
-              :: 空白が入らないように、直接JAVA_HOMEをダブルクォートで囲って伝えるよ
-              call gradlew.bat build --no-daemon "-Dorg.gradle.java.home=%JAVA_HOME%"
-              exit /b
-          )
+          # 1. gradlew がある場所を自動で見つけるよ
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Error: gradlew file not found!"
+            exit 1
+          fi
+          
+          # 2. そのフォルダに移動するよ
+          cd "$(dirname "$GRADLEW_PATH")"
+          echo "Current directory: $(pwd)"
+          
+          # 3. 実行権限を与えて、ビルド開始！
+          chmod +x gradlew
+          ./gradlew build --no-daemon
           
       - name: Search and Upload
         uses: actions/upload-artifact@v4
         with:
           name: eaglercraft-build
-          # 成果物がどこにできてもいいように、広めに拾う設定にしたよ
           path: |
             **/index.html
             **/classes.js
             **/assets/
             **/lang/
             **/build/distributions/
-            **/stable-download/
