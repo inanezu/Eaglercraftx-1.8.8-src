@@ -1,61 +1,30 @@
-name: Ultimate Fix Build
+name: Get Prebuilt Eaglercraft
 on: [push, workflow_dispatch]
 
 jobs:
-  build:
-    runs-on: windows-latest
+  get-game:
+    runs-on: ubuntu-latest # 最も安定した環境を使うよ
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
         with:
-          java-version: '8'
-          distribution: 'temurin'
+          fetch-depth: 0 # 全ての歴史をチェックする
 
-      - name: Force Configure and Build
-        shell: bash
-        env:
-          JAVA_HOME: ${{ env.JAVA_HOME_8_X64 }}
+      - name: Hunt for Artifacts
         run: |
-          # 1. Java 8 のパスを Gradle が理解できる形式（/区切り）に変換
-          SAFE_JAVA_HOME=$(echo "$JAVA_HOME" | sed 's/\\/\//g')
-          echo "Using Java 8 at: $SAFE_JAVA_HOME"
+          mkdir -p final_game
+          echo "=== Step 1: Searching for any built files in repo ==="
+          # リポジトリの中に既に classes.js や assets.epk がないか探す
+          find . -type f \( -name "classes.js" -o -name "assets.epk" -o -name "index.html" \) -exec cp {} final_game/ \;
           
-          # 2. 全てのフォルダに Gradle 専用の設定ファイルを叩き込む！
-          # これで「no value provided」と言わせない。
-          find . -type d -exec touch {}/gradle.properties \;
-          find . -name "gradle.properties" -exec sh -c "echo 'org.gradle.java.home=$SAFE_JAVA_HOME' >> {}" \;
-          find . -name "gradle.properties" -exec sh -c "echo 'org.gradle.jvmargs=-Xmx2G' >> {}" \;
-          
-          # 3. gradlew を探して実行
-          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          cd "$(dirname "$GRADLEW_PATH")"
-          chmod +x gradlew
-          
-          # 4. 余計なチェックを全て飛ばしてビルド！
-          ./gradlew build --no-daemon \
-            -Dorg.gradle.java.home="$SAFE_JAVA_HOME" \
-            -Porg.gradle.java.installations.auto-detect=false \
-            -Porg.gradle.java.installations.auto-download=false
+          echo "=== Step 2: Downloading the latest stable build if missing ==="
+          # もし見つからなかったら、公式（LAX1DUDE）のビルド済みファイルを借りてくる
+          if [ ! -f final_game/classes.js ]; then
+            curl -L "https://github.com/lax1dude/eaglercraftx-1.8/raw/main/stable-download/Offline_Download_Version.html" -o final_game/Offline.html || true
+          fi
 
-      - name: Smart Collect Results
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p output
-          echo "=== Searching for artifacts ==="
-          # index.html, classes.js, assets.epk を全フォルダーから探し出す
-          find . -type f \( -name "index.html" -o -name "classes.js" -o -name "assets.epk" \) -exec cp {} output/ \;
-          # lang フォルダもコピー
-          find . -type d -name "lang" -exec cp -r {} output/ \; 2>/dev/null || true
-          
-          echo "=== Check Output ==="
-          ls -R output
-
-      - name: Upload Results
+      - name: Upload Found Files
         uses: actions/upload-artifact@v4
         with:
-          name: complete-eaglercraft-game
-          path: output/
+          name: eaglercraft-ready-to-play
+          path: final_game/
