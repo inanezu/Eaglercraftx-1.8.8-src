@@ -1,31 +1,34 @@
-name: Grab Real Build
+name: Search From Source Repo
 on: [push, workflow_dispatch]
 
 jobs:
-  download-game:
+  extract:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Final Assets
+      - name: Strategic Search
         run: |
-          mkdir -p final_game
-          echo "=== Downloading Real Offline Build ==="
-          # 本物の「1枚で完結するマイクラ」を公式から直接取得
-          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/Offline_Download_Version.html" -o final_game/Minecraft_1.8.8_Real_Offline.html
+          mkdir -p found_items
+          echo "=== Mini's Deep Scan Starting ==="
           
-          echo "=== Downloading Web Files (JS/EPK) ==="
-          # もしウェブサイトとして公開したい時用のバラバラのファイルも取得
-          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/index.html" -o final_game/index.html
-          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/classes.js" -o final_game/classes.js
-          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/assets.epk" -o final_game/assets.epk
+          # 1. リポジトリ内の 'stable-download' フォルダから取得を試みる
+          # (ここは君のリンク先にある可能性が高い場所だよ)
+          cp -r gateway/stable-download/* found_items/ 2>/dev/null || echo "Gateway download missing"
+          
+          # 2. もしファイルがなければ、同じ作者の「完成品専用」の場所から直接持ってくる
+          # 1.8.8を動かすのに絶対必要な 3点セットだよ！
+          echo "=== Downloading the specific 1.8.8 components ==="
+          curl -L "https://github.com/Eaglercraft-Archive/Eaglercraftx-1.8.8-src/raw/main/gateway/stable-download/classes.js" -o found_items/classes.js || true
+          curl -L "https://github.com/Eaglercraft-Archive/Eaglercraftx-1.8.8-src/raw/main/gateway/stable-download/assets.epk" -o found_items/assets.epk || true
+          curl -L "https://github.com/Eaglercraft-Archive/Eaglercraftx-1.8.8-src/raw/main/gateway/stable-download/index.html" -o found_items/index.html || true
 
-          echo "=== Verification ==="
-          ls -lh final_game/
+          # 3. サイズ確認（ここで0KBじゃなければ勝ち！）
+          ls -lh found_items/
 
-      - name: Upload Everything
+      - name: Upload Final Evidence
         uses: actions/upload-artifact@v4
         with:
-          name: REAL-Eaglercraft-Ready
-          path: final_game/
+          name: FOUND-FROM-SRC-REPO
+          path: found_items/
