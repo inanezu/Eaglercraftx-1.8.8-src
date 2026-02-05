@@ -14,29 +14,29 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Build Eaglercraft (Forced Java 8)
+      - name: Build Eaglercraft
         shell: cmd
         run: |
-          :: gradlew.bat を探して、その場所でビルドを実行
+          :: gradlew.bat を探して実行
           for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
               cd /d "%%~dpi"
-              :: JAVA_HOME を直接指定して、絶対に Java 8 で動かす魔法のコマンド
               set JAVA_HOME=%JAVA_HOME_8_X64%
               call gradlew.bat build --no-daemon -Dorg.gradle.java.home="%JAVA_HOME_8_X64%"
               exit /b
           )
 
-      - name: Find and Collect Artifacts
+      - name: Find and Collect Finished Files
         if: always()
-        shell: cmd
+        shell: bash # Windowsだけどbashを使うことで、賢くファイルを探すよ！
         run: |
-          mkdir output
-          :: 出来上がった大事なファイルを全部 output フォルダに集めるよ
-          for /r %%f in (index.html, classes.js, assets.epk) do (
-              copy "%%f" output\
-          )
-          :: lang フォルダも大事だから集める
-          xcopy /s /e /i **/lang output/lang
+          mkdir -p output
+          echo "=== Searching for artifacts ==="
+          # index.html, classes.js, assets.epk を全フォルダーから探し出す
+          find . -type f \( -name "index.html" -o -name "classes.js" -o -name "assets.epk" \) -exec cp {} output/ \;
+          # lang フォルダもあればコピー
+          find . -type d -name "lang" -exec cp -r {} output/ \; 2>/dev/null || true
+          echo "=== Contents of output folder ==="
+          ls -R output
 
       - name: Upload Finished Game
         uses: actions/upload-artifact@v4
