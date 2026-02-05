@@ -1,30 +1,33 @@
-name: Get Prebuilt Eaglercraft
+name: Final Emerald Get
 on: [push, workflow_dispatch]
 
 jobs:
   get-game:
-    runs-on: ubuntu-latest # 最も安定した環境を使うよ
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 全ての歴史をチェックする
 
-      - name: Hunt for Artifacts
+      - name: Collect Real Game Files
         run: |
-          mkdir -p final_game
-          echo "=== Step 1: Searching for any built files in repo ==="
-          # リポジトリの中に既に classes.js や assets.epk がないか探す
-          find . -type f \( -name "classes.js" -o -name "assets.epk" -o -name "index.html" \) -exec cp {} final_game/ \;
+          mkdir -p final_bundle
+          echo "=== Searching for the REAL treasures ==="
           
-          echo "=== Step 2: Downloading the latest stable build if missing ==="
-          # もし見つからなかったら、公式（LAX1DUDE）のビルド済みファイルを借りてくる
-          if [ ! -f final_game/classes.js ]; then
-            curl -L "https://github.com/lax1dude/eaglercraftx-1.8/raw/main/stable-download/Offline_Download_Version.html" -o final_game/Offline.html || true
-          fi
+          # 1. もしビルド済みのJSやAssetsがあれば回収
+          find . -name "classes.js" -exec cp {} final_bundle/ \;
+          find . -name "assets.epk" -exec cp {} final_bundle/ \;
+          find . -name "assets.epw" -exec cp {} final_bundle/ \;
+          find . -name "index.html" -exec cp {} final_bundle/ \;
+          
+          # 2. 公式の「シングルファイル版」を直接ダウンロードしてくる
+          # これは数万人が使っている安定した本物のマイクラ本体だよ！
+          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/Offline_Download_Version.html" -o final_bundle/Minecraft_1.8.8_Offline.html
 
-      - name: Upload Found Files
+          echo "=== Check File Sizes ==="
+          ls -lh final_bundle/
+
+      - name: Upload Real Game
         uses: actions/upload-artifact@v4
         with:
-          name: eaglercraft-ready-to-play
-          path: final_game/
+          name: REAL-Eaglercraft-Game
+          path: final_bundle/
