@@ -13,18 +13,21 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
-          # これを足すと、古いツール（Gradle）がJava 8を確実に見つけられるようになるよ！
-          cache: 'gradle'
           
-      - name: Run Build Directly
+      - name: Run Build with Forced Java 8
         shell: cmd
-        env:
-          # プログラムに直接「Java 8を使ってね」と教え込むよ
-          JAVA_HOME: ${{ env.JAVA_HOME_8_X64 }}
         run: |
+          :: Java 8の場所を特定するよ
+          set "JAVA8_PATH=%JAVA_HOME_8_X64:\=/%"
+          
+          :: gradlew.bat がある場所を探すよ
           for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
               cd /d "%%~dpi"
-              :: --no-daemon をつけて、余計なメモリ消費を抑えるよ
+              
+              :: ここがポイント！Gradleに「絶対Java 8を使え」という設定ファイルをその場で作るよ
+              echo org.gradle.java.home=%JAVA8_PATH% > gradle.properties
+              
+              :: ビルド実行！
               call gradlew.bat build --no-daemon
               exit /b
           )
