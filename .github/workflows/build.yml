@@ -14,36 +14,27 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
           
-      - name: Run Build with Forced Java 8
+      - name: Run Build
         shell: cmd
         run: |
-          :: Java 8の場所を特定するよ
-          set "JAVA8_PATH=%JAVA_HOME_8_X64:\=/%"
-          
-          :: gradlew.bat がある場所を探すよ
+          :: gradlew.bat を探して実行するよ
           for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
               cd /d "%%~dpi"
               
-              :: ここがポイント！Gradleに「絶対Java 8を使え」という設定ファイルをその場で作るよ
-              echo org.gradle.java.home=%JAVA8_PATH% > gradle.properties
-              
-              :: ビルド実行！
-              call gradlew.bat build --no-daemon
+              :: 空白が入らないように、直接JAVA_HOMEをダブルクォートで囲って伝えるよ
+              call gradlew.bat build --no-daemon "-Dorg.gradle.java.home=%JAVA_HOME%"
               exit /b
           )
           
-      - name: Search for Game Files
-        shell: cmd
-        run: |
-          dir /s /b index.html
-          
-      - name: Upload Result
+      - name: Search and Upload
         uses: actions/upload-artifact@v4
         with:
           name: eaglercraft-build
+          # 成果物がどこにできてもいいように、広めに拾う設定にしたよ
           path: |
             **/index.html
             **/classes.js
             **/assets/
             **/lang/
+            **/build/distributions/
             **/stable-download/
