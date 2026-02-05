@@ -17,20 +17,22 @@ jobs:
       - name: Run Build Directly
         shell: cmd
         run: |
-          :: ウィザードを飛ばして直接ビルド命令を出すよ！
-          call gradlew.bat build --no-daemon
+          :: gradlew.bat がある場所を探して、そこからビルドを実行するよ
+          for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
+              cd /d "%%~dpi"
+              call gradlew.bat build --no-daemon
+              exit /b
+          )
           
       - name: Search for Game Files
         shell: cmd
         run: |
-          :: どこにファイルができたか検索してログに出すよ（確認用）
           dir /s /b index.html
           
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
           name: eaglercraft-build
-          # どこに生成されてもいいように、ワイルドカードで見つけ出すよ！
           path: |
             **/index.html
             **/classes.js
