@@ -1,4 +1,4 @@
-name: Ultimate Build Eaglercraft
+name: Ultimate Fix Build
 on: [push, workflow_dispatch]
 
 jobs:
@@ -14,32 +14,44 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
 
-      - name: Build Eaglercraft
-        shell: cmd
+      - name: Auto-Fix and Build
+        shell: bash
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_8_X64 }}
         run: |
-          :: gradlew.bat を探して実行
-          for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
-              cd /d "%%~dpi"
-              set JAVA_HOME=%JAVA_HOME_8_X64%
-              call gradlew.bat build --no-daemon -Dorg.gradle.java.home="%JAVA_HOME_8_X64%"
-              exit /b
-          )
+          # 1. Java 8のパスから空白を消して、短いパス（PROGRA~1形式）に変換
+          SHORT_JAVA_HOME=$(cygpath -ms "$JAVA_HOME")
+          echo "Force Java 8 Path: $SHORT_JAVA_HOME"
+          
+          # 2. プロジェクト内の build.gradle 全てに「Java 8を使え」と強制追記
+          # これが「no value provided」エラーを物理的に消し去る秘策！
+          find . -name "build.gradle" -exec sed -i "1i allprojects { tasks.withType(JavaCompile) { targetCompatibility = '1.8'; sourceCompatibility = '1.8' } }" {} +
+          
+          # 3. gradlew を探して実行（Java 8を全方位から固定）
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          cd "$(dirname "$GRADLEW_PATH")"
+          chmod +x gradlew
+          
+          ./gradlew build --no-daemon \
+            -Dorg.gradle.java.home="$SHORT_JAVA_HOME" \
+            -Ptarget.java.8=true \
+            -Porg.gradle.java.installations.paths="$SHORT_JAVA_HOME" \
+            -Porg.gradle.java.installations.auto-detect=false
 
-      - name: Find and Collect Finished Files
+      - name: Smart Collect Results
         if: always()
-        shell: bash # Windowsだけどbashを使うことで、賢くファイルを探すよ！
+        shell: bash
         run: |
           mkdir -p output
-          echo "=== Searching for artifacts ==="
+          echo "=== Searching for finished files ==="
           # index.html, classes.js, assets.epk を全フォルダーから探し出す
           find . -type f \( -name "index.html" -o -name "classes.js" -o -name "assets.epk" \) -exec cp {} output/ \;
-          # lang フォルダもあればコピー
+          # lang フォルダもあれば丸ごとコピー
           find . -type d -name "lang" -exec cp -r {} output/ \; 2>/dev/null || true
-          echo "=== Contents of output folder ==="
           ls -R output
 
       - name: Upload Finished Game
         uses: actions/upload-artifact@v4
         with:
-          name: full-eaglercraft-game
+          name: complete-eaglercraft-game
           path: output/
