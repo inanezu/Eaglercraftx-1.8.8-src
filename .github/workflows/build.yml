@@ -1,33 +1,31 @@
-name: Final Emerald Get
+name: Grab Real Build
 on: [push, workflow_dispatch]
 
 jobs:
-  get-game:
+  download-game:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Collect Real Game Files
+      - name: Download Final Assets
         run: |
-          mkdir -p final_bundle
-          echo "=== Searching for the REAL treasures ==="
+          mkdir -p final_game
+          echo "=== Downloading Real Offline Build ==="
+          # 本物の「1枚で完結するマイクラ」を公式から直接取得
+          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/Offline_Download_Version.html" -o final_game/Minecraft_1.8.8_Real_Offline.html
           
-          # 1. もしビルド済みのJSやAssetsがあれば回収
-          find . -name "classes.js" -exec cp {} final_bundle/ \;
-          find . -name "assets.epk" -exec cp {} final_bundle/ \;
-          find . -name "assets.epw" -exec cp {} final_bundle/ \;
-          find . -name "index.html" -exec cp {} final_bundle/ \;
-          
-          # 2. 公式の「シングルファイル版」を直接ダウンロードしてくる
-          # これは数万人が使っている安定した本物のマイクラ本体だよ！
-          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/Offline_Download_Version.html" -o final_bundle/Minecraft_1.8.8_Offline.html
+          echo "=== Downloading Web Files (JS/EPK) ==="
+          # もしウェブサイトとして公開したい時用のバラバラのファイルも取得
+          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/index.html" -o final_game/index.html
+          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/classes.js" -o final_game/classes.js
+          curl -L "https://github.com/Lax1dude/eaglercraftx-1.8/raw/main/stable-download/assets.epk" -o final_game/assets.epk
 
-          echo "=== Check File Sizes ==="
-          ls -lh final_bundle/
+          echo "=== Verification ==="
+          ls -lh final_game/
 
-      - name: Upload Real Game
+      - name: Upload Everything
         uses: actions/upload-artifact@v4
         with:
-          name: REAL-Eaglercraft-Game
-          path: final_bundle/
+          name: REAL-Eaglercraft-Ready
+          path: final_game/
