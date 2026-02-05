@@ -1,29 +1,45 @@
-name: Find and Get Eaglercraft
+name: Ultimate Build Eaglercraft
 on: [push, workflow_dispatch]
 
 jobs:
-  search:
-    runs-on: ubuntu-latest # 爆速の Linux に切り替えるよ
+  build:
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Search for Web Files
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+
+      - name: Build Eaglercraft (Forced Java 8)
+        shell: cmd
         run: |
-          echo "=== Searching for index.html ==="
-          find . -name "index.html"
-          
-          echo "=== Creating Artifact Folder ==="
-          mkdir -p output
-          
-          # index.html や js ファイル、assets フォルダを全部集めるよ
-          # もしビルド済みのものがあれば、これで全部拾える！
-          find . -name "index.html" -exec cp --parents {} output/ \;
-          find . -name "*.js" -exec cp --parents {} output/ \;
-          find . -name "assets" -type d -exec cp -r --parents {} output/ \; 2>/dev/null || true
-          
-      - name: Upload Everything Found
+          :: gradlew.bat を探して、その場所でビルドを実行
+          for /f "delims=" %%i in ('dir /s /b gradlew.bat') do (
+              cd /d "%%~dpi"
+              :: JAVA_HOME を直接指定して、絶対に Java 8 で動かす魔法のコマンド
+              set JAVA_HOME=%JAVA_HOME_8_X64%
+              call gradlew.bat build --no-daemon -Dorg.gradle.java.home="%JAVA_HOME_8_X64%"
+              exit /b
+          )
+
+      - name: Find and Collect Artifacts
+        if: always()
+        shell: cmd
+        run: |
+          mkdir output
+          :: 出来上がった大事なファイルを全部 output フォルダに集めるよ
+          for /r %%f in (index.html, classes.js, assets.epk) do (
+              copy "%%f" output\
+          )
+          :: lang フォルダも大事だから集める
+          xcopy /s /e /i **/lang output/lang
+
+      - name: Upload Finished Game
         uses: actions/upload-artifact@v4
         with:
-          name: eaglercraft-files
+          name: full-eaglercraft-game
           path: output/
