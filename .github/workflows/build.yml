@@ -1,0 +1,24 @@
+name: Build Eaglercraft
+on: [push, workflow_dispatch] # pushした時か、手動でボタンを押した時に実行
+
+jobs:
+  build:
+    runs-on: windows-latest # Windows環境のサーバーを借りる
+    steps:
+      - uses: actions/checkout@v4 # コードを取得
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Run Build Script
+        run: |
+          ./CompileLatestClient.bat # ビルド実行！
+          
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: eaglercraft-build
+          path: stable-download/ # ビルドで生成されたフォルダを指定（名前はリポジトリに合わせてね）
